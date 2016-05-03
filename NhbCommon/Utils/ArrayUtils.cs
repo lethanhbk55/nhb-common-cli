@@ -16,12 +16,10 @@ namespace NhbCommon.Utils
                 return true;
             }
 
-
             if (obj is IList)
             {
                 return true;
             }
-
 
             return false;
         }
