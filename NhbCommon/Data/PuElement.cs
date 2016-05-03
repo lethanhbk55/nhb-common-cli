@@ -14,7 +14,9 @@ namespace NhbCommon.Data
 
         String ToJSON();
 
-        void WriterJSON(JsonWriter writer);
+        void WriteJSON(JsonWriter writer);
+
+        void ReadJSON(JsonReader reader);
         
         void WriteTo(Stream writer);
     }

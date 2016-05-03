@@ -16,6 +16,11 @@ namespace NhbCommon.Data
         private object _data = null;
         private PuDataType _type = PuDataType.NULL;
 
+        public PuValue()
+        {
+
+        }
+
         public PuValue(object data)
         {
             Data = data;
@@ -118,18 +123,18 @@ namespace NhbCommon.Data
                     if (this.Data is PuObject)
                     {
                         jsonWriter.WriteStartObject();
-                        WriterJSON(jsonWriter);
+                        WriteJSON(jsonWriter);
                         jsonWriter.WriteEndObject();
                     }
                     else if (this.Data is PuArray)
                     {
                         jsonWriter.WriteStartArray();
-                        WriterJSON(jsonWriter);
+                        WriteJSON(jsonWriter);
                         jsonWriter.WriteEndArray();
                     }
                     else
                     {
-                        WriterJSON(jsonWriter);
+                        WriteJSON(jsonWriter);
                     }
                 }
             }
@@ -284,7 +289,7 @@ namespace NhbCommon.Data
         }
 
 
-        public void WriterJSON(Newtonsoft.Json.JsonWriter writer)
+        public void WriteJSON(Newtonsoft.Json.JsonWriter writer)
         {
             if (this.Data == null)
             {
@@ -292,7 +297,7 @@ namespace NhbCommon.Data
             }
             else if (this.Data is PuElement)
             {
-                (this.Data as PuElement).WriterJSON(writer);
+                (this.Data as PuElement).WriteJSON(writer);
             }
             else if (this.Data is byte[])
             {
@@ -301,6 +306,30 @@ namespace NhbCommon.Data
             else
             {
                 writer.WriteValue(this.Data);
+            }
+        }
+
+        public void ReadJSON(JsonReader reader)
+        {
+            switch (reader.TokenType)
+            {
+                case JsonToken.StartArray:
+                    PuArray array = new PuArrayList();
+                    array.ReadJSON(reader);
+                    this._data = array;
+                    this._type = PuDataType.PUARRAY;
+                    break;
+                case JsonToken.StartObject:
+                    PuObject puo = new PuObject();
+                    puo.ReadJSON(reader);
+                    this._data = puo;
+                    this._type = PuDataType.PUOBJECT;
+                    break;
+                case JsonToken.PropertyName:
+                    break;
+                default:
+                    this.Data = reader.Value;
+                    break;
             }
         }
     }

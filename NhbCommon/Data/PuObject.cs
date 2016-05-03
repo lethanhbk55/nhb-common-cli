@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace NhbCommon.Data
 {
@@ -67,7 +68,6 @@ namespace NhbCommon.Data
 
         public void RemoveAll()
         {
-            _values.GetEnumerator();
             this._values.Clear();
         }
 
@@ -314,7 +314,7 @@ namespace NhbCommon.Data
                 using (JsonWriter jsonWriter = new JsonTextWriter(stringWriter))
                 {
                     jsonWriter.WriteStartObject();
-                    WriterJSON(jsonWriter);
+                    WriteJSON(jsonWriter);
                     jsonWriter.WriteEndObject();
                 }
             }
@@ -326,7 +326,7 @@ namespace NhbCommon.Data
             PuObjectTemplate.Instance.Pack(writer, this);
         }
 
-        public void WriterJSON(JsonWriter writer)
+        public void WriteJSON(JsonWriter writer)
         {
             foreach (KeyValuePair<string, PuValue> entry in this)
             {
@@ -334,18 +334,18 @@ namespace NhbCommon.Data
                 if (entry.Value.Data is PuObject)
                 {
                     writer.WriteStartObject();
-                    entry.Value.WriterJSON(writer);
+                    entry.Value.WriteJSON(writer);
                     writer.WriteEndObject();
                 }
                 else if (entry.Value.Data is PuArray)
                 {
                     writer.WriteStartArray();
-                    entry.Value.WriterJSON(writer);
+                    entry.Value.WriteJSON(writer);
                     writer.WriteEndArray();
                 }
                 else
                 {
-                    entry.Value.WriterJSON(writer);
+                    entry.Value.WriteJSON(writer);
                 }
             }
         }
@@ -382,6 +382,64 @@ namespace NhbCommon.Data
                 return GetString(fieldName);
             }
             return defaultValue;
+        }
+
+        public static PuObject FromJson(string json)
+        {
+            using (StringReader stringReader = new StringReader(json))
+            {
+                using (JsonReader reader = new JsonTextReader(stringReader))
+                {
+                    if (reader.Read())
+                    {
+                        if (reader.TokenType == JsonToken.StartObject)
+                        {
+                            PuObject result = new PuObject();
+                            result.ReadJSON(reader);
+                            return result;
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException("json object not start { token");
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        public void ReadJSON(JsonReader reader)
+        {
+            while (reader.Read())
+            {
+                JsonToken token = reader.TokenType;
+                switch (token)
+                {
+                    case JsonToken.StartObject:
+                        {
+                            PuObject puo = new PuObject();
+                            reader.Read();
+                            String key = reader.Value.ToString();
+                            puo.ReadJSON(reader);
+                            this.SetPuObject(key, puo);
+                            break;
+                        }
+                    case JsonToken.StartArray:
+                        PuArray array = new PuArrayList();
+                        array.ReadJSON(reader);
+                        break;
+                    case JsonToken.PropertyName:
+                        {
+                            string key = reader.Value.ToString();
+                            if (reader.Read())
+                            {
+                                object value = reader.Value;
+                                this.Set(key, value);
+                            }
+                            break;
+                        }
+                }
+            }
         }
     }
 }

@@ -146,7 +146,7 @@ namespace NhbCommon.Data
                 using (JsonWriter jsonWriter = new JsonTextWriter(stringWriter))
                 {
                     jsonWriter.WriteStartArray();
-                    WriterJSON(jsonWriter);
+                    WriteJSON(jsonWriter);
                     jsonWriter.WriteEndArray();
                 }
             }
@@ -166,27 +166,82 @@ namespace NhbCommon.Data
         }
 
 
-        public void WriterJSON(Newtonsoft.Json.JsonWriter writer)
+        public void WriteJSON(Newtonsoft.Json.JsonWriter writer)
         {
             foreach (PuValue value in this)
             {
                 if (value.Data is PuObject)
                 {
                     writer.WriteStartObject();
-                    value.WriterJSON(writer);
+                    value.WriteJSON(writer);
                     writer.WriteEndObject();
                 }
                 else if (value.Data is PuArray)
                 {
                     writer.WriteStartArray();
-                    value.WriterJSON(writer);
+                    value.WriteJSON(writer);
                     writer.WriteEndArray();
                 }
                 else
                 {
-                    value.WriterJSON(writer);
+                    value.WriteJSON(writer);
                 }
             }
+        }
+
+
+        public void ReadJSON(JsonReader reader)
+        {
+            while (reader.Read())
+            {
+                switch (reader.TokenType)
+                {
+                    case JsonToken.StartArray:
+                        PuArray array = new PuArrayList();
+                        array.ReadJSON(reader);
+                        this.Add(PuValue.FromObject(array));
+                        break;
+                    case JsonToken.StartObject:
+                        PuObject puo = new PuObject();
+                        puo.ReadJSON(reader);
+                        this.Add(PuValue.FromObject(puo));
+                        break;
+                    case JsonToken.PropertyName:
+                    case JsonToken.EndArray:
+                    case JsonToken.EndObject:
+                    case JsonToken.EndConstructor:
+                    case JsonToken.StartConstructor:
+                        break;
+                    default:
+                        PuValue value = new PuValue();
+                        value.ReadJSON(reader);
+                        this.Add(value);
+                        break;
+                }
+            }
+        }
+
+        public static PuArray FromJson(String json)
+        {
+            using (StringReader stringReader = new StringReader(json))
+            {
+                using (JsonReader reader = new JsonTextReader(stringReader))
+                {
+                    if (reader.Read())
+                    {
+                        switch (reader.TokenType)
+                        {
+                            case JsonToken.StartArray:
+                                PuArray array = new PuArrayList();
+                                array.ReadJSON(reader);
+                                return array;
+                            default:
+                                throw new InvalidOperationException("array not start with [ token");
+                        }
+                    }
+                }
+            }
+            return null;
         }
     }
 }
